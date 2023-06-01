@@ -1,0 +1,204 @@
+#IL MODEL 9 è FATTO CON I HYPERPARAMETRI OTTIMALI DATI DAL CODICE HYPERPARAMETER_OPTIMIZATION
+import tensorflow_decision_forests as tfdf
+import matplotlib.pyplot as plt
+import os
+import numpy as np
+import pandas as pd
+import tensorflow as tf
+import math
+import dati2
+categorical_features=dati2.categorical_features()
+numeric_features=dati2.numeric_features()
+categoric_numerical= dati2.categoric_numerical()
+df=dati2.sql_question()
+dataframe=df[['Ritardi3']+numeric_features+categorical_features+categoric_numerical]
+dataframe[numeric_features+categoric_numerical+['Ritardi3']] = dataframe[numeric_features+categoric_numerical+['Ritardi3']].astype(float)
+dataset_df=dataframe
+def split_dataset(dataset, test_ratio=0.20):
+  """Splits a panda dataframe in two."""
+  test_indices = np.random.rand(len(dataset)) < test_ratio
+  return dataset[~test_indices], dataset[test_indices]
+
+
+train_ds_pd, test_ds_pd = split_dataset(dataset_df)
+print("{} examples in training, {} examples for testing.".format(
+    len(train_ds_pd), len(test_ds_pd)))
+
+label='Ritardi3'
+
+train_ds = tfdf.keras.pd_dataframe_to_tf_dataset(train_ds_pd, label=label)
+test_ds = tfdf.keras.pd_dataframe_to_tf_dataset(test_ds_pd, label=label)
+
+categorical_features_numeric=[]
+cat_num=[]
+'''for i in categorical_features + numeric_features:
+    feature_2 = tfdf.keras.FeatureUsage(name=i)
+    categorical_features.append(feature_2)
+
+for h in categoric_numerical:
+    feature_1 = tfdf.keras.FeatureUsage(name=h, semantic=tfdf.keras.FeatureSemantic.CATEGORICAL)
+    cat_num.append(feature_1)
+
+all_features = cat_num+categorical_features_numeric
+all_features=categoric_numerical+numeric_features+categorical_features
+'''
+
+model_6 = tfdf.keras.GradientBoostedTreesModel(
+    num_trees=400, growing_strategy="BEST_FIRST_GLOBAL", max_depth=8 )
+model_6.compile(
+    metrics=["accuracy"])
+
+model_6.fit(x=train_ds)
+evaluation = model_6.evaluate(test_ds, return_dict=True)
+print(evaluation)
+tfdf.model_plotter.plot_model(model_6, tree_idx=0, max_depth=3)
+
+'''
+tfdf.model_plotter.plot_model(model_6, tree_idx=0, max_depth=3)
+plt.savefig('iiimmagine.html')'''
+#model_6.summary()
+
+
+model_6.make_inspector().features()
+
+model_6.make_inspector().variable_importances()
+
+model_6.make_inspector().evaluation()
+
+
+model_6.make_inspector().training_logs()
+logs_6 = model_6.make_inspector().training_logs()
+'''
+plt.figure(figsize=(12, 4))
+
+plt.subplot(1, 2, 1)
+plt.plot([log.num_trees for log in logs], [log.evaluation.accuracy for log in logs])
+plt.xlabel("Number of trees")
+plt.ylabel("Accuracy (out-of-bag)")
+
+plt.subplot(1, 2, 2)
+plt.plot([log.num_trees for log in logs], [log.evaluation.loss for log in logs])
+plt.xlabel("Number of trees")
+plt.ylabel("Logloss (out-of-bag)")'''
+
+#plt.savefig("gradient5.png")
+
+model_7 = tfdf.keras.GradientBoostedTreesModel(
+    num_trees=500,
+    growing_strategy="BEST_FIRST_GLOBAL",
+    max_depth=8,
+    split_axis="SPARSE_OBLIQUE",
+    categorical_algorithm="RANDOM",
+    )
+model_7.compile(
+    metrics=["accuracy"])
+
+model_7.fit(x=train_ds)
+evaluation = model_7.evaluate(test_ds, return_dict=True)
+print(evaluation)
+
+model_7.make_inspector().features()
+
+model_7.make_inspector().variable_importances()
+
+model_7.make_inspector().evaluation()
+
+
+model_7.make_inspector().training_logs()
+
+logs_7 = model_7.make_inspector().training_logs()
+
+model_7.summary()
+model_8 = tfdf.keras.GradientBoostedTreesModel(hyperparameter_template="benchmark_rank1")
+model_8.compile(
+    metrics=["accuracy"])
+
+model_8.fit(x=train_ds)
+
+evaluation = model_8.evaluate(test_ds, return_dict=True)
+print(evaluation)
+
+model_8.make_inspector().features()
+
+model_8.make_inspector().variable_importances()
+
+model_8.make_inspector().evaluation()
+
+
+model_8.make_inspector().training_logs()
+
+logs_8 = model_8.make_inspector().training_logs()
+model_8.summary()
+
+model_9 = tfdf.keras.GradientBoostedTreesModel(
+    min_examples=5,
+    categorical_algorithm="RANDOM",
+    split_axis="SPARSE_OBLIQUE",
+    sparse_oblique_num_projections_exponent=1.5,
+    growing_strategy="BEST_FIRST_GLOBAL",
+    max_num_nodes=32,
+    use_hessian_gain=True,
+    shrinkage=0.1,
+    num_candidate_attributes_ratio=0.9,
+)
+model_9.compile( metrics=["accuracy"])
+model_9.fit(x=train_ds)
+
+evaluation = model_9.evaluate(test_ds, return_dict=True)
+print(evaluation)
+
+model_9.make_inspector().features()
+
+model_9.make_inspector().variable_importances()
+
+model_9.make_inspector().evaluation()
+
+
+model_9.make_inspector().training_logs()
+
+logs_9= model_9.make_inspector().training_logs()
+
+model_9.summary()
+
+model_10 = tfdf.keras.GradientBoostedTreesModel(
+    num_trees=500,
+    growing_strategy="BEST_FIRST_GLOBAL",
+    max_depth=8,
+    split_axis="SPARSE_OBLIQUE",
+    categorical_algorithm="RANDOM",
+    hyperparameter_template="benchmark_rank1",
+    )
+model_10.compile(
+    metrics=["accuracy"])
+
+model_10.fit(x=train_ds)
+evaluation = model_10.evaluate(test_ds, return_dict=True)
+print(evaluation)
+
+model_10.make_inspector().features()
+
+model_10.make_inspector().variable_importances()
+
+model_10.make_inspector().evaluation()
+
+
+model_10.make_inspector().training_logs()
+
+logs_10 = model_10.make_inspector().training_logs()
+model_10.summary()
+plt.figure(figsize=(12, 4))
+
+line1, = plt.plot([log.num_trees for log in logs_6], [log.evaluation.accuracy for log in logs_6], color='b')
+line2, = plt.plot([log.num_trees for log in logs_7], [log.evaluation.accuracy for log in logs_7], color='r')
+line3, = plt.plot([log.num_trees for log in logs_8], [log.evaluation.accuracy for log in logs_8], color='k')
+line4, = plt.plot([log.num_trees for log in logs_9], [log.evaluation.accuracy for log in logs_9], color='c')
+line5, = plt.plot([log.num_trees for log in logs_10], [log.evaluation.accuracy for log in logs_10], color='g')
+
+plt.xlabel("Number of trees")
+plt.ylabel("Accuracy (out-of-bag)")
+
+plt.legend([line1, line2,line3,line4,line5], ['Model 6', 'Model 7', 'Model 8', 'Model 9', 'Model 10'])
+
+plt.show()
+
+plt.savefig("confront4.png")
