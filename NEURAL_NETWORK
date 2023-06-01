@@ -1,0 +1,155 @@
+#IL CODICE NON GIRA PER PROBLEMI DI RAM (?) 
+
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+from matplotlib import cm
+import pandas as pd
+import tensorflow as tf
+import pandas as pd
+from tensorflow import keras
+from keras.utils import FeatureSpace
+from tensorflow.keras import regularizers
+import dati2
+import tensorflow as tf
+from keras.layers import Dense, Dropout
+from keras.layers import LeakyReLU
+
+
+categorical_features=dati2.categorical_features()
+numeric_features=dati2.numeric_features()
+categoric_numerical= dati2.categoric_numerical()
+df=dati2.sql_question()
+dataframe=df[['Ritardi3']+numeric_features+categorical_features+categoric_numerical]
+dataframe[numeric_features+categoric_numerical+['Ritardi3']] = dataframe[numeric_features+categoric_numerical+['Ritardi3']].astype(float)
+dataframe['Departure_Position'] = dataframe['Departure_Position'].astype(str)
+
+boh=['Departure_Position','Scheduled_Subfleet']
+
+
+
+
+val_dataframe = dataframe.sample(frac=0.2, random_state=1337)
+train_dataframe = dataframe.drop(val_dataframe.index)
+print(
+    "Using %d samples for training and %d for validation"
+    % (len(train_dataframe), len(val_dataframe))
+)
+def dataframe_to_dataset(dataframe):
+    dataframe = dataframe.copy()
+    labels = dataframe.pop("Ritardi3")
+    labels = labels.astype(np.float32)
+    ds = tf.data.Dataset.from_tensor_slices((dict(dataframe), labels))
+    ds = ds.shuffle(buffer_size=len(dataframe))
+    return ds
+
+
+train_ds = dataframe_to_dataset(train_dataframe)
+val_ds = dataframe_to_dataset(val_dataframe)
+
+for x, y in train_ds.take(1):
+    print("Input:", x)
+    print("Target:", y)
+
+#gestione variabili nulle numeriche
+for feature in numeric_features:
+    mean_value = train_dataframe[feature].mean()
+    train_dataframe[feature].fillna(mean_value, inplace=True)
+    val_dataframe[feature].fillna(mean_value, inplace=True)
+
+# Gestione dei valori nulli per le variabili categoriche
+for feature in categorical_features:
+    train_dataframe[feature].fillna('fittizio', inplace=True)
+    val_dataframe[feature].fillna('fittizio', inplace=True)
+
+train_ds = train_ds.batch(32)
+val_ds = val_ds.batch(32)
+feature={i: "float_discretized" for i in numeric_features}
+
+
+for j in categorical_features:
+    feature[j]="string_categorical"
+for i in categoric_numerical:
+    feature[i]= "integer_categorical"
+
+feature_space = FeatureSpace(
+    features=feature,
+)
+train_ds_with_no_labels = train_ds.map(lambda x, _: x, 
+  num_parallel_calls=tf.data.AUTOTUNE)
+@tf.autograph.experimental.do_not_convert
+def map_func(x, _):
+    return x
+train_ds_with_no_labels = train_ds.map(map_func, 
+  num_parallel_calls=tf.data.AUTOTUNE)
+
+feature_space.adapt(train_ds_with_no_labels)
+
+for x, _ in train_ds.take(1):
+    preprocessed_x = feature_space(x)
+    print("preprocessed_x.shape:", preprocessed_x.shape)
+    print("preprocessed_x.dtype:", preprocessed_x.dtype)
+
+preprocessed_train_ds = train_ds.map(
+    lambda x, y: (feature_space(x), y),
+    num_parallel_calls=tf.data.AUTOTUNE
+)
+
+@tf.autograph.experimental.do_not_convert
+def preprocess_fn(x, y):
+    return feature_space(x), y
+
+preprocessed_train_ds = train_ds.map(preprocess_fn, num_parallel_calls=tf.data.AUTOTUNE)
+
+preprocessed_train_ds = preprocessed_train_ds.prefetch(tf.data.AUTOTUNE)
+
+preprocessed_val_ds = val_ds.map(
+    lambda x, y: (feature_space(x), y),
+    num_parallel_calls=tf.data.AUTOTUNE,
+    deterministic=False
+)
+
+@tf.autograph.experimental.do_not_convert
+def preprocess_fn(x, y):
+    return feature_space(x), y
+
+preprocessed_val_ds = val_ds.map(preprocess_fn, num_parallel_calls=tf.data.AUTOTUNE, deterministic=False)
+preprocessed_val_ds = preprocessed_val_ds.prefetch(tf.data.AUTOTUNE)
+
+dict_inputs = feature_space.get_inputs()
+
+encoded_features = feature_space.get_encoded_features()
+# Define the model architecture
+
+x = Dense(32, activation="relu", kernel_regularizer=regularizers.l1(0.001))(encoded_features)
+x = Dense(64, activation=LeakyReLU(alpha=0.1))(x)
+x = Dense(32, activation="tanh", kernel_regularizer=regularizers.l1(0.001))(encoded_features)
+x = Dense(64, activation="relu", kernel_regularizer=regularizers.l1(0.001))(x)
+x = Dense(64, activation=LeakyReLU(alpha=0.1))(x)
+x = Dropout(0.5)(x)
+output_layer = Dense(1, activation="sigmoid", kernel_regularizer=regularizers.l2(0.001))(x)
+
+output_layer = keras.layers.Dense(1, activation="sigmoid", kernel_regularizer=regularizers.l2(0.001))(x)
+
+# Create training model
+training_model = keras.models.Model(inputs=encoded_features, outputs=output_layer)
+training_model.compile(optimizer="adam", loss="binary_crossentropy", metrics=["accuracy"])
+
+# Create inference model
+inference_model = keras.models.Model(inputs=dict_inputs, outputs=output_layer)
+
+# Train the model
+model=training_model.fit(
+    preprocessed_train_ds, epochs=30, validation_data=preprocessed_val_ds, verbose=2
+)
+def plot_learning_curves(history):
+    plt.figure(figsize=(8, 5))
+    plt.plot(history.epoch,history.history['loss'], label='train loss')
+    plt.plot(history.epoch,history.history['val_loss'], label='valid loss')
+    plt.legend()
+    plt.title('loss')
+    plt.grid(True)
+    plt.show()
+plot_learning_curves(model)
+
+plt.savefig("tensorkeras.png")
