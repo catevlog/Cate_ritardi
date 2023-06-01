@@ -1,0 +1,60 @@
+import tensorflow_decision_forests as tfdf
+import matplotlib.pyplot as plt
+import os
+import numpy as np
+import pandas as pd
+import tensorflow as tf
+import math
+import dati2
+
+categorical_features=dati2.categorical_features()
+numeric_features=dati2.numeric_features()
+categoric_numerical= dati2.categoric_numerical()
+df=dati2.sql_question()
+dataframe=df[['Ritardi3']+numeric_features+categorical_features+categoric_numerical]
+dataframe[numeric_features+categoric_numerical+['Ritardi3']] = dataframe[numeric_features+categoric_numerical+['Ritardi3']].astype(float)
+dataframe[categorical_features+categoric_numerical] = dataframe[categorical_features+categoric_numerical].astype(str)
+
+dataset_df=dataframe
+def split_dataset(dataset, test_ratio=0.20):
+  """Splits a panda dataframe in two."""
+  test_indices = np.random.rand(len(dataset)) < test_ratio
+  return dataset[~test_indices], dataset[test_indices]
+
+
+train_ds_pd, test_ds_pd = split_dataset(dataset_df)
+print("{} examples in training, {} examples for testing.".format(
+    len(train_ds_pd), len(test_ds_pd)))
+
+label='Ritardi3'
+
+train_ds = tfdf.keras.pd_dataframe_to_tf_dataset(train_ds_pd, label=label)
+test_ds = tfdf.keras.pd_dataframe_to_tf_dataset(test_ds_pd, label=label)
+
+tuner = tfdf.tuner.RandomSearch(num_trials=100)
+tuner.choice("min_examples", [2, 5, 7, 10])
+tuner.choice("categorical_algorithm", ["CART", "RANDOM"])
+tuner.choice("split_axis", ["AXIS_ALIGNED"])
+oblique_space = tuner.choice("split_axis", ["SPARSE_OBLIQUE"], merge=True)
+oblique_space.choice("sparse_oblique_normalization",
+                     ["NONE", "STANDARD_DEVIATION", "MIN_MAX"])
+oblique_space.choice("sparse_oblique_weights", ["BINARY", "CONTINUOUS"])
+oblique_space.choice("sparse_oblique_num_projections_exponent", [1.0, 1.5])
+local_search_space = tuner.choice("growing_strategy", ["LOCAL"])
+local_search_space.choice("max_depth", [3, 4, 5, 6, 8])
+global_search_space = tuner.choice("growing_strategy", ["BEST_FIRST_GLOBAL"], merge=True)
+global_search_space.choice("max_num_nodes", [16, 32, 64, 128, 256])
+
+tuner.choice("use_hessian_gain", [True, False])
+tuner.choice("shrinkage", [0.02, 0.05, 0.10, 0.15])
+tuner.choice("num_candidate_attributes_ratio", [0.2, 0.5, 0.9, 1.0])
+tuned_model = tfdf.keras.GradientBoostedTreesModel(tuner=tuner)
+tuned_model.fit(train_ds, verbose=2)
+
+tuned_model.compile(["accuracy"])
+tuned_test_accuracy = tuned_model.evaluate(test_ds, return_dict=True, verbose=0)["accuracy"]
+print(f"Test accuracy with the TF-DF hyper-parameter tuner: {tuned_test_accuracy:.4f}")
+# Display the tuning logs.
+tuning_logs = tuned_model.make_inspector().tuning_logs()
+tuning_logs.head()
+tuning_logs[tuning_logs.best].iloc[0]
