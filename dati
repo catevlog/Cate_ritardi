@@ -1,0 +1,226 @@
+import pyodbc
+import pandas as pd
+import numpy as np
+def sql_question():
+    user=''
+    passs=''
+    #conn = pyodbc.connect(DRIVER={ODBC Driver 17 for SQL Server};SERVER=NEKKAR.airdolomiti.local\EN;DATABASE=DBEn_FlightOps;UID=user;PWD=passs;")
+    conn= pyodbc.connect("DRIVER={ODBC Driver 17 for SQL Server};SERVER=NEKKAR.airdolomiti.local\EN;DATABASE=DBEn_FlightOps;UID="+user+";PWD="+passs+";")
+    cursor = conn.cursor()
+    cursor.execute("use DBEn_FlightOps")
+
+    table_name = "unione_dati"
+    query="""SELECT [Ritardo], [Airline]
+        ,[Departure Airport]
+        ,[Arrival Airport]
+        ,[Callsign]
+        ,[Risk Holder]
+        ,[Operating Flight]
+        ,[Traffic Area]
+        ,[Owner/Operator]
+        , unione_dati.[Registration]
+        ,[A/C Version]
+        ,[Business Class (C) Capacity]
+        ,[Economy Class (M) Capacity]
+        ,[Total Capacity]
+        ,[Aircraft Init]
+        ,[Day of Week Departure]
+        ,[Scheduled Block Time]
+        ,[Actual Block Time]
+        ,[Flight Time]
+        ,[Calculated Flight Time]
+        ,[Departure Position]
+        ,[Departure Gate]
+        ,[Departure Runway]
+        ,[Arrival Station Level (SL)]
+        ,[Arrival Economic Area (EA)]
+        ,[Arrival Ground OPS Area]
+        ,[Arrival Ground OPS Region]
+        ,[Scheduled Owner]
+        ,[Scheduled A/C Division]
+        ,[Scheduled Subfleet]
+        ,[Scheduled Registration]
+        ,[Scheduled A/C Version]
+        ,[Handling Airport]
+        ,[Dry Operating Weight (DOW)]
+        ,[Pax Weight]
+        ,[Baggage Count]
+        ,[Tare Weight]
+        ,[Baggage Weight]
+        ,[Cargo Weight]
+        ,[Mail Weight]
+        ,[Courier Weight]
+        ,[Other Weight]
+        ,[Dead Load Weight]
+        ,[Traffic Load Weight]
+        ,[Maximum Zero Fuel Weight (MZFW)]
+        ,[Adjusted Zero Fuel Weight (ADJ ZFW)]
+        ,[Estimated ZFW sent]
+        ,[Planned Zero Fuel Weight (FZFW)]
+        ,[Zero Fuel Weight (ZFW)]
+        ,[Trip Fuel Weight (TF)]
+        ,[Takeoff Fuel Weight (TOF)]
+        ,[Maximum Takeoff Weight (MTOW)]
+        ,[Adjusted Takeoff Weight (ADJ TOW)]
+        ,[Takeoff Weight (TOW)]
+        ,[Maximum Landing Weight (MLAW)]
+        ,[Adjusted Landing Weight (ADJ LAW)]
+        ,[Landing Weight (LAW)]
+        ,[Underload Weight (U-LD)]
+
+        ,[Paxes Onboard Business(WAB)]
+        ,[Paxes Onboard Economy(WAB)]
+        ,[Paxes Onboard Other(WAB)]
+
+        ,[Business Class (C) Booked]
+        ,[Economy Class (M) Booked]
+        ,[Total Booked]
+        ,[Business Class (C) on Board]
+        ,[Economy Class (M) on Board]
+        ,[ID Pax on Board]
+        ,[Children on Board]
+        ,[Total on Board] /*MI TOGLIE COSE*/
+        ,[Total on Bord (MVT)] /*MI TOGLIE DATI*/
+        ,[Seat Occupied Factor] /*MI TOGLIE DATI*/	
+        ,[Business Class (C) Sales Configuration]
+        ,[Economy Class (M) Sales Configuration]
+        ,[Business Class (C) Blocked]
+        ,[Economy Class (M) Blocked]
+        ,[Cost Index Planned] /*MI TOGLIE DATI*/
+        ,[deicingYes]
+        ,[deicingantiYes]
+            ,[Cargo Net Weight - FES Forecast2]
+            ,[Mail Net Weight - FES Forecast2]
+        ,[Courier Net Weight - FES Forecast2]
+        ,[Other Net Weight - FES Forecast2]
+        ,[Cargo Net Weight - Offload2]
+        ,[Mail Net Weight - Offload2]
+        ,[Courier Net Weight - Offload2]
+        ,[Others Net Weight - Offload2]
+        ,[Baggage Net Weight - Offload2]
+        ,[Infants on Board2]
+
+        ,[Left Behind Passengers: DEB and VDB2]
+        ,[Wheelchair Passengers2]
+        ,[Unaccompanied Minor2]
+        ,  [temperature]
+        ,[dew_point]
+        ,[intensity_wind]
+        ,[direction_wind]
+        ,[cloud_number]
+        ,[cloud2_number]
+        ,[cloud3_number]
+        ,[cloud4_number]
+        , finger
+        ,[Risk Holder2],[Operating Flight2]
+        ,techinical_issue
+        ,Ritardi2
+        ,month
+        ,first_engine_numeric
+        ,star_given_eng
+        ,star_requist
+        ,Ritardi3
+        ,target_take_off_time_engine ,
+        Aircraft_STD,
+        prova_crew.N_cockpit,
+		prova_crew.tempo,
+		prova_crew.tempo1,
+		prova_crew.tempo2,
+		Crew_completo.[Cambio_assistente]
+      ,Crew_completo.[tempo_assistente]
+      ,Crew_completo.[tempo_assistente2]
+      ,Crew_completo.[tempo_assistente3]
+	  ,Crew_completo.[tempo_assistente4]
+       , ghiaccio.deicingYes_before,ghiaccio.deicingantiYes_before,ghiaccio.STD,ghiaccio.registration,ghiaccio.time_deicing_before,ghiaccio.time_deanticing_before
+     ,
+	   substring(Scheduled_Departure_Time,12,2)
+
+
+     
+    FROM [DBEn_FlightOps].[dbo].[unione_dati]
+	INNER JOIN [DBEn_FlightOps].[TRSADEN\CAlessi].[Unione_metar]
+    ON  unione_dati.[id]=Unione_metar.id 
+	INNER JOIN prova_crew
+    ON  unione_dati.[crew_piloti] =prova_crew.id
+	INNER JOIN Crew_completo
+    ON  unione_dati.[id_assistenti] =Crew_completo.id
+	INNER JOIN [DBEn_FlightOps].[TRSADEN\CAlessi].ghiaccio
+    ON  unione_dati.[id_ghiaccio] =ghiaccio.id
+     where [Landing Weight (LAW)]!=0 and unione_dati.Registration not like '-'  and status not like '%CNL%' and [Service Type] like 'J'
+
+    """
+    
+    # we create 40 separable points
+    cursor.execute(query)
+    rows = cursor.fetchall()
+
+    from_db = []
+
+    for row in rows:
+        row = list(rows)
+    from_db.append(row)
+    a=np.array(from_db)[0]
+    columns = ['Ritardo', 'Airline','Departure_Airport','Arrival_Airport','Callsign','Risk_Holder','Operating_Flight','Traffic_Area',
+           'Owner_Operator','Registration','A_C_Version','Business_Class_C_Capacity','Economy_Class_M_Capacity','Total_Capacity',
+           'Aircraft_Init','Day_of_Week_Departure','Scheduled_Block_Time','Actual_Block_Time','Flight_Time',
+           'Calculated_Flight_Time','Departure_Position','Departure_Gate','Departure_Runway','Arrival_Station_Level_SL',
+           'Arrival_Economic_Area_EA','Arrival_Ground_OPS_Area','Arrival_Ground_OPS_Region','Scheduled_Owner',
+           'Scheduled_A_C_Division','Scheduled_Subfleet','Scheduled_Registration','Scheduled_A_C_Version',
+           'Handling_Airport','Dry_Operating_Weight_DOW','Pax_Weight','Baggage_Count','Tare_Weight','Baggage_Weight',
+           'Cargo_Weight','Mail_Weight','Courier_Weight','Other_Weight','Dead_Load_Weight','Traffic_Load_Weight',
+           'Maximum_Zero_Fuel_Weight_MZFW','Adjusted_Zero_Fuel_Weight_ADJ_ZFW','Estimated_ZFW_sent','Planned_Zero_Fuel_Weight_FZFW',
+           'Zero_Fuel_Weight_ZFW','Trip_Fuel_Weight_TF','Takeoff_Fuel_Weight_TOF','Maximum_Takeoff_Weight_MTOW',
+           'Adjusted_Takeoff_Weight_ADJ_TOW','Takeoff_Weight_TOW','Maximum_Landing_Weight_MLAW',
+           'Adjusted_Landing_Weight_ADJ_LAW', 'Landing_Weight_LAW', 'Underload_Weight_U-LD',
+           'Paxes_Onboard_Business_WAB', 'Paxes_Onboard_Economy_WAB', 'Paxes_Onboard_Other_WAB', 'Business_Class_C_Booked',
+           'Economy_Class_M_Booked', 'Total_Booked', 'Business_Class_C_on_Board', 'Economy_Class_M_on_Board', 'ID_Pax_on_Board',
+           'Children_on_Board', 'Total_on_Board', 'Total_on_Bord_MVT', 'Seat_Occupied_Factor',
+           'Business_Class_C_Sales_Configuration', 'Economy_Class_M_Sales_Configuration', 'Business_Class_C_Blocked',
+           'Economy_Class_M_Blocked',  'Cost_Index_Planned', 'deicingYes',
+           'deicingantiYes', 'Cargo_Net_Weight_FES_Forecast2', 'Mail_Net_Weight_FES_Forecast2', 'Courier_Net_Weight_FES_Forecast2',
+           'Other_Net_Weight_FES_Forecast2', 'Cargo_Net_Weight_Offload2', 'Mail_Net_Weight_Offload2', 'Courier_Net_Weight_Offload2',
+           'Others_Net_Weight_Offload2', 'Baggage_Net_Weight_Offload2', 'Infants_on_Board2',
+           'Left_Behind_Passengers_DEB_and_VDB2',
+           'Wheelchair_Passengers2', 'Unaccompanied_Minor2','temperature','dew_point',
+           'intensity_wind','direction_wind','cloud_number','cloud2_number','cloud3_number','cloud4_number','finger',
+           'Risk_Holder2','Operating_Flight2','techinical_issue','Ritardi2','month','first_engine_numeric','star_given_eng',
+           'star_requist','Ritardi3','target_take_off_time_engine' , 'Aircraft_STD','N_cockpit','tempo','tempo1','tempo2',
+            'Cambio_assistente','tempo_assistente','tempo_assistente2','tempo_assistente3','tempo_assistente4',
+            'deicingYes_before','deicingantiYes_before','STD','registration','time_deicing_before','time_deanticing_before','STD_num']
+    df = pd.DataFrame(a, columns=columns)
+    return df
+def inutili():
+    return ['Calculated_Flight_Time', 'EventCode','Left Behind Passengers: WL and PAD2', 'Underload Code','External Aircondition','Second Stairs','Aircraft Init','Scheduled Block Time','Actual Block Time','Infants on Board','first_engine_numeric','Callsign']
+def numeric_features():
+    return ['Business_Class_C_Capacity', 'Economy_Class_M_Capacity', 'Total_Capacity',
+                  'Day_of_Week_Departure', 'Dry_Operating_Weight_DOW', 'Pax_Weight',
+                  'Baggage_Count', 'Tare_Weight', 'Baggage_Weight', 'Cargo_Weight', 'Mail_Weight', 'Courier_Weight',
+                  'Other_Weight', 'Dead_Load_Weight', 'Traffic_Load_Weight', 'Maximum_Zero_Fuel_Weight_MZFW',
+                  'Adjusted_Zero_Fuel_Weight_ADJ_ZFW', 'Estimated_ZFW_sent', 'Planned_Zero_Fuel_Weight_FZFW',
+                  'Zero_Fuel_Weight_ZFW', 'Trip_Fuel_Weight_TF', 'Takeoff_Fuel_Weight_TOF', 'Maximum_Takeoff_Weight_MTOW',
+                  'Adjusted_Takeoff_Weight_ADJ_TOW', 'Takeoff_Weight_TOW', 'Maximum_Landing_Weight_MLAW',
+                  'Adjusted_Landing_Weight_ADJ_LAW', 'Landing_Weight_LAW', 'Underload_Weight_U-LD', 'Paxes_Onboard_Business_WAB',
+                  'Paxes_Onboard_Economy_WAB', 'Paxes_Onboard_Other_WAB',
+                  'Business_Class_C_on_Board', 'Economy_Class_M_on_Board', 'ID_Pax_on_Board', 'Children_on_Board',
+                  'Total_on_Board', 'Total_on_Bord_MVT', 'Seat_Occupied_Factor', 'Business_Class_C_Sales_Configuration',
+                  'Economy_Class_M_Sales_Configuration', 'Business_Class_C_Blocked', 'Economy_Class_M_Blocked',
+                  'Cost_Index_Planned', 'Cargo_Net_Weight_FES_Forecast2',
+                  'Mail_Net_Weight_FES_Forecast2', 'Courier_Net_Weight_FES_Forecast2', 'Other_Net_Weight_FES_Forecast2',
+                  'Cargo_Net_Weight_Offload2', 'Mail_Net_Weight_Offload2', 'Courier_Net_Weight_Offload2',
+                  'Others_Net_Weight_Offload2', 'Baggage_Net_Weight_Offload2', 'Infants_on_Board2', 'Left_Behind_Passengers_DEB_and_VDB2',
+                  'Wheelchair_Passengers2', 'Unaccompanied_Minor2',
+                  'temperature','dew_point','intensity_wind','direction_wind','cloud_number','cloud2_number',
+           'cloud3_number','cloud4_number','month','star_given_eng','star_requist',
+            'target_take_off_time_engine' ,  'Aircraft_STD','N_cockpit','tempo','tempo1','tempo2',
+             'Cambio_assistente','tempo_assistente','tempo_assistente2','tempo_assistente3','tempo_assistente4'
+             ,'time_deicing_before','time_deanticing_before','STD_num']
+output=['Ritardo','Ritardi2','Ritardi3']
+def categorical_features():
+    return ['Departure_Position','Departure_Gate', 'Departure_Runway', 'Airline', 'Departure_Airport', 'Arrival_Airport', 'Owner_Operator',
+                      'Registration',  'Arrival_Station_Level_SL', 'Arrival_Economic_Area_EA',
+                      'Arrival_Ground_OPS_Area', 'Arrival_Ground_OPS_Region', 'Scheduled_Owner', 'Scheduled_A_C_Division',
+                      'Scheduled_Registration', 'Handling_Airport'
+                        ,'registration'       ]
+def categoric_numerical():
+    return ['Operating_Flight2', 'Traffic_Area','deicingYes', 'deicingantiYes','finger', 'Risk_Holder2',
+                     'techinical_issue' ,'deicingYes_before','deicingantiYes_before' ]
