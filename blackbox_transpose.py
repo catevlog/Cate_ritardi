@@ -169,3 +169,109 @@ test_acc = evaluator.test()
 
 # Output of the blackbox
 print('> Final accuracy %.3f' % test_acc)
+
+
+
+OUTPUT
+2023-07-19 11:47:00.512517: I tensorflow/core/util/port.cc:110] oneDNN custom operations are on. You may see slightly different numerical results due to floating-point round-off errors from different computation orders. To turn them off, set the environment variable `TF_ENABLE_ONEDNN_OPTS=0`.
+2023-07-19 11:47:00.585232: I tensorflow/core/platform/cpu_feature_guard.cc:182] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.
+To enable the following instructions: AVX2 AVX512F AVX512_VNNI FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.
+2023-07-19 11:47:02.544359: W tensorflow/compiler/tf2tensorrt/utils/py_utils.cc:38] TF-TRT Warning: Could not find TensorRT
+dimensione: (3601, 500, 1)
+> Reading the inputs..
+> Preparing the data..
+> Constructing the network
+gli output sono 2 2 [(6, 5, 1, 0, 1), (16, 5, 1, 0, 1)] [128, 84] 0.2 1 500 2 1 fine
+496
+492
+NeuralNet(
+  (features): Sequential(
+    (0): Conv1d(1, 6, kernel_size=(5,), stride=(1,), bias=False)
+    (1): ReLU(inplace=True)
+    (2): Dropout1d(p=0.2, inplace=False)
+    (3): BatchNorm1d(6, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+    (4): MaxPool1d(kernel_size=1, stride=1, padding=0, dilation=1, ceil_mode=False)
+    (5): Conv1d(6, 16, kernel_size=(5,), stride=(1,), bias=False)
+    (6): ReLU(inplace=True)
+    (7): Dropout1d(p=0.2, inplace=False)
+    (8): BatchNorm1d(16, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+    (9): MaxPool1d(kernel_size=1, stride=1, padding=0, dilation=1, ceil_mode=False)
+    (10): AvgPool1d(kernel_size=(1,), stride=(1,), padding=(0,))
+  )
+  (classifier): Sequential(
+    (0): Linear(in_features=3873024, out_features=128, bias=True)
+    (1): ReLU(inplace=True)
+    (2): Dropout(p=0.2, inplace=False)
+    (3): BatchNorm1d(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+    (4): Linear(in_features=128, out_features=84, bias=True)
+    (5): ReLU(inplace=True)
+    (6): Dropout(p=0.2, inplace=False)
+    (7): BatchNorm1d(84, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+    (8): Linear(in_features=84, out_features=2, bias=True)
+    (9): BatchNorm1d(2, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+  )
+)
+{'device': device(type='cpu'), 'cnn': NeuralNet(
+  (features): Sequential(
+    (0): Conv1d(1, 6, kernel_size=(5,), stride=(1,), bias=False)
+    (1): ReLU(inplace=True)
+    (2): Dropout1d(p=0.2, inplace=False)
+    (3): BatchNorm1d(6, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+    (4): MaxPool1d(kernel_size=1, stride=1, padding=0, dilation=1, ceil_mode=False)
+    (5): Conv1d(6, 16, kernel_size=(5,), stride=(1,), bias=False)
+    (6): ReLU(inplace=True)
+    (7): Dropout1d(p=0.2, inplace=False)
+    (8): BatchNorm1d(16, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+    (9): MaxPool1d(kernel_size=1, stride=1, padding=0, dilation=1, ceil_mode=False)
+    (10): AvgPool1d(kernel_size=(1,), stride=(1,), padding=(0,))
+  )
+  (classifier): Sequential(
+    (0): Linear(in_features=3873024, out_features=128, bias=True)
+    (1): ReLU(inplace=True)
+    (2): Dropout(p=0.2, inplace=False)
+    (3): BatchNorm1d(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+    (4): Linear(in_features=128, out_features=84, bias=True)
+    (5): ReLU(inplace=True)
+    (6): Dropout(p=0.2, inplace=False)
+    (7): BatchNorm1d(84, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+    (8): Linear(in_features=84, out_features=2, bias=True)
+    (9): BatchNorm1d(2, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+  )
+), 'trainloader': <torch.utils.data.dataloader.DataLoader object at 0x7f39881caf20>, 'validloader': <torch.utils.data.dataloader.DataLoader object at 0x7f3941057a30>, 'testloader': <torch.utils.data.dataloader.DataLoader object at 0x7f39881cabc0>, 'optimizer': Adagrad (
+Parameter Group 0
+    differentiable: False
+    eps: 1e-10
+    foreach: None
+    initial_accumulator_value: 0.0005
+    lr: 0.1
+    lr_decay: 0.9
+    maximize: False
+    weight_decay: 0.0
+), 'batch_size': 32, 'dataset': 'CUSTOM'}
+> Training
+<evaluator.Evaluator object at 0x7f394109bd60>
+speremo
+tensor([[[ 0.3922,  1.0845,  1.6815,  ..., -1.3217, -1.4702, -1.5534]],
+
+        [[-0.3700, -0.2677, -0.0972,  ..., -0.8900, -0.0361,  0.6210]],
+
+        [[-0.5879, -0.9082, -1.2259,  ...,  0.9801,  1.1609,  1.2694]],
+
+        ...,
+
+        [[-0.1761, -0.2478, -0.2968,  ...,  2.0349,  2.4169,  2.6452]],
+
+        [[-2.3245, -1.9793, -1.5411,  ..., -1.2167, -1.3615, -1.3502]],
+
+        [[ 1.3991,  1.3260,  1.2319,  ..., -2.1009, -2.5710, -2.8635]]])
+Traceback (most recent call last):
+  File "/mnt/c/Users/calessi/Desktop/HyperNomad_linux/src/blackbox/blackbox.py", line 166, in <module>
+    best_val_acc, best_epoch = evaluator.train()
+  File "/mnt/c/Users/calessi/Desktop/HyperNomad_linux/src/blackbox/evaluator.py", line 132, in train
+    outputs = self.cnn(inputs)
+  File "/home/caterina99/.local/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1501, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/mnt/c/Users/calessi/Desktop/HyperNomad_linux/src/blackbox/neural_net.py", line 137, in forward
+    x = x.view(-1, self.in_size_first_full_layer)
+RuntimeError: shape '[-1, 3873024]' is invalid for input of size 251904
+
