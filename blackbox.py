@@ -131,14 +131,14 @@ assert isinstance(testloader, torch.utils.data.dataloader.DataLoader), 'Testload
 assert image_size is not None, 'Image size can not be None'
 assert number_classes is not None, 'Total number of classes can not be None'
 
-num_input_channels = image_size[1]
+num_input_channels = image_size[0] #modifica rispetto alla trasposta
 list_param_conv_layers=[(6, 1, 1, 0, 1), (16, 1, 1, 0, 1)] #devo metterlo così per aver kernel 1 altrimenti mi da errore
 print('> Constructing the network')
 # construct the network
 print('gli output sono',num_conv_layers, num_full_layers, list_param_conv_layers, list_param_full_layers,
-                dropout_rate, activation, image_size[0], number_classes, num_input_channels,'fine')
+                dropout_rate, activation, image_size[1], number_classes, num_input_channels,'fine')
 cnn = NeuralNet(num_conv_layers, num_full_layers, list_param_conv_layers, list_param_full_layers,
-                dropout_rate, activation, image_size[0], number_classes, num_input_channels)
+                dropout_rate, activation, image_size[1], number_classes, num_input_channels)
 
 cnn.to(device)
 
