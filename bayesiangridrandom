@@ -1,0 +1,189 @@
+import tensorflow_decision_forests as tfdf
+import matplotlib.pyplot as plt
+import os
+import numpy as np
+import pandas as pd
+import tensorflow as tf
+import math
+import dati2
+import keras_tuner as kt
+from matplotlib.colors import ListedColormap
+
+categorical_features=dati2.categorical_features()
+numeric_features=dati2.numeric_features()
+categoric_numerical= dati2.categoric_numerical()
+df=dati2.sql_question()
+dataframe=df[['Ritardi3']+numeric_features+categorical_features+categoric_numerical]
+dataframe[numeric_features+categoric_numerical+['Ritardi3']] = dataframe[numeric_features+categoric_numerical+['Ritardi3']].astype(float)
+dataframe[categorical_features+categoric_numerical] = dataframe[categorical_features+categoric_numerical].astype(str)
+
+dataset_df=dataframe
+
+
+def split_dataset(dataset, test_ratio=0.20):
+  """Splits a panda dataframe in two."""
+  test_indices = np.random.rand(len(dataset)) < test_ratio
+  return dataset[~test_indices], dataset[test_indices]
+
+
+train_ds, test_ds = split_dataset(dataset_df)
+sub_train_df, sub_valid_df = split_dataset(train_ds)
+sub_train_ds = tfdf.keras.pd_dataframe_to_tf_dataset(sub_train_df, label="Ritardi3")
+sub_valid_ds = tfdf.keras.pd_dataframe_to_tf_dataset(sub_valid_df, label="Ritardi3")
+
+print("{} examples in training, {} examples for testing.".format(
+    len(train_ds), len(test_ds)))
+
+# Name of the label column.
+label = "Ritardi3"
+
+#Numero di esempi uguale a 80
+
+
+#Trovo gli hyperparameter with bayesian optimization
+
+def build_model(hp):
+    """Creates a model."""
+
+    growing_strategy = hp.Choice("growing_strategy", ["LOCAL", "BEST_FIRST_GLOBAL"])
+    split_axis = hp.Choice("split_axis", ["SPARSE_OBLIQUE", "AXIS_ALIGNED"])
+    print(split_axis)
+    model_params = {
+        "min_examples": hp.Choice("min_examples", [2, 5, 7, 10]),
+        "categorical_algorithm": hp.Choice("categorical_algorithm", ["CART", "RANDOM"]),
+        "use_hessian_gain": bool(hp.Choice("use_hessian_gain", [True, False])),
+        "shrinkage": hp.Choice("shrinkage", [0.02, 0.05, 0.10, 0.15]),
+        "num_candidate_attributes_ratio": hp.Choice("num_candidate_attributes_ratio", [0.2, 0.5, 0.9, 1.0]),
+        "growing_strategy": growing_strategy,
+        "split_axis" :split_axis
+    }
+
+    if growing_strategy == "LOCAL":
+        model_params["max_depth"] = hp.Choice("max_depth", [3, 4, 5, 6, 8])
+    elif growing_strategy == "BEST_FIRST_GLOBAL":
+        model_params["max_num_nodes"] = hp.Choice("max_num_nodes", [16, 32, 64, 128, 256])
+
+    if split_axis == "SPARSE_OBLIQUE":
+        model_params["sparse_oblique_weights"] = hp.Choice("sparse_oblique_weights", ["BINARY", "CONTINUOUS"])
+        model_params["sparse_oblique_normalization"] = hp.Choice("sparse_oblique_normalization", ["NONE", "STANDARD_DEVIATION", "MIN_MAX"])
+        model_params["sparse_oblique_num_projections_exponent"] = hp.Choice("sparse_oblique_num_projections_exponent", [1.0, 1.5])
+
+    model = tfdf.keras.GradientBoostedTreesModel(**model_params)
+
+    # Optimize the model accuracy as computed on the validation dataset.
+    model.compile(metrics=["accuracy"])
+    return model
+#Implemento la bayesian_opt
+keras_tuner_bayes = kt.BayesianOptimization(
+    build_model,
+    objective="val_accuracy",
+    max_trials=75,
+    overwrite=True,
+    directory="/tmp/keras_tuning")
+
+
+# Tune the model
+keras_tuner_bayes.search(sub_train_ds, validation_data=sub_valid_ds)
+
+#Colleziono i valori delle accuracy
+
+all_trials_bayes = keras_tuner_bayes.oracle.trials
+current_val_accuracy_list_bayes=[]
+for i in all_trials_bayes:
+  current_val_accuracy_list_bayes.append(all_trials_bayes[i].metrics.get_last_value('val_accuracy'))
+
+best_val_accuracy_list_bayes = [current_val_accuracy_list_bayes[0]]
+for i in range(len(current_val_accuracy_list_bayes)-1):
+  if current_val_accuracy_list_bayes[i+1]>best_val_accuracy_list_bayes[i]:
+    best_val_accuracy_list_bayes.append(current_val_accuracy_list_bayes[i+1])
+  else:
+    best_val_accuracy_list_bayes.append(best_val_accuracy_list_bayes[i])
+
+
+plt.plot(range(1, len((current_val_accuracy_list_bayes) + 1)), current_val_accuracy_list_bayes)
+plt.ylabel("Accuracy value")
+plt.xlabel('Number of blackbox evaluations')
+plt.title("Bayesian optimization")
+plt.savefig("Bayesian_optimization.png")
+
+#Ora valuto la grid 
+
+keras_tuner_Grid = kt.GridSearch(
+    build_model,
+    objective="val_accuracy",
+    max_trials=75,
+    overwrite=True,
+    directory="/tmp/keras_tuning")
+
+
+# Tune the model
+keras_tuner_Grid.search(sub_train_ds, validation_data=sub_valid_ds)
+
+#Colleziono i valori delle accuracy
+
+all_trials_Grid= keras_tuner_Grid.oracle.trials
+current_val_accuracy_list_Grid=[]
+for i in all_trials_Grid:
+  current_val_accuracy_list_Grid.append(all_trials_Grid[i].metrics.get_last_value('val_accuracy'))
+
+best_val_accuracy_list_Grid = [current_val_accuracy_list_Grid[0]]
+for i in range(len(current_val_accuracy_list_Grid)-1):
+  if current_val_accuracy_list_Grid[i+1]>best_val_accuracy_list_Grid[i]:
+    best_val_accuracy_list_Grid.append(current_val_accuracy_list_Grid[i+1])
+  else:
+    best_val_accuracy_list_Grid.append(best_val_accuracy_list_Grid[i])
+
+
+plt.plot(range(1, len((current_val_accuracy_list_Grid) + 1)), current_val_accuracy_list_Grid)
+plt.ylabel("Accuracy value")
+plt.xlabel('Number of blackbox evaluations')
+plt.title("Gridsearch optimization")
+plt.savefig("Gridsearch.png")
+
+#Ora valuto la randomsearch
+
+
+keras_tuner_random = kt.RandomSearch(
+    build_model,
+    objective="val_accuracy",
+    max_trials=75,
+    overwrite=True,
+    directory="/tmp/keras_tuning")
+
+
+# Tune the model
+keras_tuner_random.search(sub_train_ds, validation_data=sub_valid_ds)
+
+#Colleziono i valori delle accuracy
+
+all_trials_random= keras_tuner_random.oracle.trials
+current_val_accuracy_list_random=[]
+for i in all_trials_random:
+  current_val_accuracy_list_random.append(all_trials_random[i].metrics.get_last_value('val_accuracy'))
+
+best_val_accuracy_list_random = [current_val_accuracy_list_random[0]]
+for i in range(len(current_val_accuracy_list_random)-1):
+  if current_val_accuracy_list_random[i+1]>best_val_accuracy_list_random[i]:
+    best_val_accuracy_list_random.append(current_val_accuracy_list_random[i+1])
+  else:
+    best_val_accuracy_list_random.append(best_val_accuracy_list_random[i])
+
+
+plt.plot(range(1, len((current_val_accuracy_list_random) + 1)), current_val_accuracy_list_random)
+plt.ylabel("Accuracy value")
+plt.xlabel('Number of blackbox evaluations')
+plt.title("Randomsearch optimization")
+plt.savefig("Randomsearch.png")
+
+#Plotto tutti i grafici dei valori ottimali
+plt.plot(range(1, len(best_val_accuracy_list_bayes) + 1), best_val_accuracy_list_bayes,'r',label='Bayesian')
+plt.plot(range(1, len(best_val_accuracy_list_Grid) + 1), best_val_accuracy_list_Grid,'y',label='Gridsearch')
+plt.plot(range(1, len(best_val_accuracy_list_random) + 1), best_val_accuracy_list_random,'b',label='Randomsearch')
+# Opzionale: Aggiungi etichette agli assi e un titolo al grafico
+plt.legend(loc='upper left', bbox_to_anchor=(1.02, 1))
+
+
+plt.ylabel("Accuracy value")
+plt.xlabel('Number of blackbox evaluations')
+plt.title("Best values")
+plt.savefig("Bestvalues.png")
