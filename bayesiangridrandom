@@ -37,7 +37,7 @@ print("{} examples in training, {} examples for testing.".format(
 # Name of the label column.
 label = "Ritardi3"
 
-#Numero di esempi uguale a 80
+#Numero di esempi uguale a 75
 
 
 #Trovo gli hyperparameter with bayesian optimization
@@ -100,11 +100,12 @@ for i in range(len(current_val_accuracy_list_bayes)-1):
     best_val_accuracy_list_bayes.append(best_val_accuracy_list_bayes[i])
 
 
-plt.plot(range(1, len((current_val_accuracy_list_bayes) + 1)), current_val_accuracy_list_bayes)
+plt.plot(range(1, len(current_val_accuracy_list_bayes) + 1), current_val_accuracy_list_bayes)
 plt.ylabel("Accuracy value")
 plt.xlabel('Number of blackbox evaluations')
 plt.title("Bayesian optimization")
 plt.savefig("Bayesian_optimization.png")
+plt.close() 
 
 #Ora valuto la grid 
 
@@ -134,12 +135,12 @@ for i in range(len(current_val_accuracy_list_Grid)-1):
     best_val_accuracy_list_Grid.append(best_val_accuracy_list_Grid[i])
 
 
-plt.plot(range(1, len((current_val_accuracy_list_Grid) + 1)), current_val_accuracy_list_Grid)
+plt.plot(range(1, len(current_val_accuracy_list_Grid) + 1), current_val_accuracy_list_Grid)
 plt.ylabel("Accuracy value")
 plt.xlabel('Number of blackbox evaluations')
 plt.title("Gridsearch optimization")
 plt.savefig("Gridsearch.png")
-
+plt.close() 
 #Ora valuto la randomsearch
 
 
@@ -169,21 +170,23 @@ for i in range(len(current_val_accuracy_list_random)-1):
     best_val_accuracy_list_random.append(best_val_accuracy_list_random[i])
 
 
-plt.plot(range(1, len((current_val_accuracy_list_random) + 1)), current_val_accuracy_list_random)
+plt.plot(range(1, len(current_val_accuracy_list_random) + 1), current_val_accuracy_list_random)
 plt.ylabel("Accuracy value")
 plt.xlabel('Number of blackbox evaluations')
 plt.title("Randomsearch optimization")
 plt.savefig("Randomsearch.png")
+plt.close() 
 
 #Plotto tutti i grafici dei valori ottimali
 plt.plot(range(1, len(best_val_accuracy_list_bayes) + 1), best_val_accuracy_list_bayes,'r',label='Bayesian')
 plt.plot(range(1, len(best_val_accuracy_list_Grid) + 1), best_val_accuracy_list_Grid,'y',label='Gridsearch')
 plt.plot(range(1, len(best_val_accuracy_list_random) + 1), best_val_accuracy_list_random,'b',label='Randomsearch')
 # Opzionale: Aggiungi etichette agli assi e un titolo al grafico
-plt.legend(loc='upper left', bbox_to_anchor=(1.02, 1))
+plt.legend()
 
 
 plt.ylabel("Accuracy value")
 plt.xlabel('Number of blackbox evaluations')
 plt.title("Best values")
 plt.savefig("Bestvalues.png")
+plt.close() 
